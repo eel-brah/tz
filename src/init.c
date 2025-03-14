@@ -1,7 +1,6 @@
 #include "../include/touchpad_zoom.h"
 
 Display *init(int *opcode, int *event, int *error, t_args *args) {
-  args->zoom_running = true;
   args->base_zoom_factor = 1;
   args->current_zoom_factor = 1;
   args->target_zoom_factor = 1;

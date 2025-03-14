@@ -6,7 +6,7 @@ void *update_zoom(void *arg) {
   sleep_time.tv_sec = 0;
   sleep_time.tv_nsec = 16666667; // ~60fps (16.67ms)
 
-  while (args->zoom_running) {
+  while (zoom_running) {
     pthread_mutex_lock(&(args->zoom_mutex));
     if (fabs(args->current_zoom_factor - args->target_zoom_factor) > 0.01) {
       args->current_zoom_factor +=

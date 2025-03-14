@@ -1,6 +1,9 @@
 #include "../include/touchpad_zoom.h"
 
 int TOUCHPAD_ID = -1;
+volatile sig_atomic_t zoom_running = 1;
+
+void handle_signal(int sig) { zoom_running = 0; }
 
 void handle_events(XIDeviceEvent *xdata, t_args *args) {
   double scale_ratio;
@@ -57,7 +60,7 @@ int start(Display *display, pthread_t *zoom_thread, t_args *args, int opcode) {
   pthread_create(zoom_thread, NULL, update_zoom, args);
 
   // Main event loop
-  while (1) {
+  while (zoom_running) {
     XEvent ev;
     XNextEvent(display, &ev);
     if (ev.type == GenericEvent && ev.xcookie.extension == opcode) {
@@ -71,7 +74,6 @@ int start(Display *display, pthread_t *zoom_thread, t_args *args, int opcode) {
 }
 
 void clean_up(Display *display, pthread_t *zoom_thread, t_args *args) {
-  args->zoom_running = false;
   pthread_join(*zoom_thread, NULL);
   pthread_mutex_destroy(&(args->zoom_mutex));
   XCloseDisplay(display);
@@ -106,6 +108,7 @@ void handle_arguments(int ac, char **av) {
       exit(EXIT_FAILURE);
     }
 
+    syslog(LOG_INFO, "Using touchpad ID: %d", (int)id);
     printf("Using touchpad ID: %d\n", (int)id);
     TOUCHPAD_ID = (int)id;
     return;
@@ -116,8 +119,15 @@ void handle_arguments(int ac, char **av) {
 }
 
 int main(int ac, char **av) {
+
   // process inputs and make it work in the background
   handle_arguments(ac, av);
+
+  // systemd
+  signal(SIGTERM, handle_signal); // systemd stop signal
+  signal(SIGINT, handle_signal);  // ctrl-c signal
+  openlog(av[0], LOG_PID, LOG_DAEMON);
+  syslog(LOG_INFO, "Daemon started.");
 
   // Init Display, args and get XInput2 info
   t_args args;
@@ -127,12 +137,14 @@ int main(int ac, char **av) {
   if (display == NULL)
     return 1;
 
-  if (!start(display, &zoom_thread, &args, opcode)) {
+  if (start(display, &zoom_thread, &args, opcode)) {
     XCloseDisplay(display);
     return 1;
   }
 
   // Clean up - tho we never get here
+  syslog(LOG_INFO, "Daemon shutting down.");
+  closelog();
   clean_up(display, &zoom_thread, &args);
   return 0;
 }

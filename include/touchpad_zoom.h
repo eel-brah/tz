@@ -13,16 +13,19 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <syslog.h>
 
 #define MIN_ZOOM_FACTOR 1.0
 #define MAX_ZOOM_FACTOR 4.0
 #define ZOOM_SENSITIVITY 0.5 // Adjust this to control zoom speed
 
 extern int TOUCHPAD_ID;
+extern volatile sig_atomic_t zoom_running;
 
 // Struct to track zoom state
 typedef struct s_args {
-  bool zoom_running;
   double target_zoom_factor;
   double current_zoom_factor;
   double base_zoom_factor;
