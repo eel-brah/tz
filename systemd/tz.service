@@ -1,12 +1,8 @@
 [Unit]
 Description=Touchpad Zoom Daemon
-After=network.target graphical-session.target
+After=graphical-session.target
 
 [Service]
-ExecStartPre=/bin/sleep 10
-Environment=DISPLAY=:1
-Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
-User=sam
 ExecStart=/usr/bin/tz
 Restart=on-failure
 RestartSec=5
@@ -15,4 +11,4 @@ StandardError=syslog
 SyslogIdentifier=tz
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

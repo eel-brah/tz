@@ -1,11 +1,14 @@
 #!/bin/bash
-set -e
+set -e 
 
-# Stop and disable the service before removing
-systemctl stop tz.service || true
-systemctl disable tz.service || true
-rm /usr/bin/tz
-rm /etc/systemd/system/tz.service
-systemctl daemon-reload
+systemctl --user stop tz.service || true
+systemctl --user disable tz.service || true
 
+rm -f "$HOME/.config/systemd/user/tz.service"
+
+systemctl --user daemon-reload
+
+sudo rm -f /usr/bin/tz
+
+echo "Uninstallation complete! The service has been removed."
 exit 0

@@ -1,10 +1,13 @@
 #include "../include/touchpad_zoom.h"
 
+int pipe_fd[2];
 int TOUCHPAD_ID = ID;
 volatile sig_atomic_t zoom_running = 1;
 
 void handle_signal(int sig) {
   (void)sig;
+  char buf = 1;
+  write(pipe_fd[1], &buf, sizeof(buf));
   zoom_running = 0;
 }
 
@@ -62,17 +65,39 @@ int start(Display *display, pthread_t *zoom_thread, t_args *args, int opcode) {
   }
   pthread_create(zoom_thread, NULL, update_zoom, args);
 
-  // Main event loop
   while (zoom_running) {
-    XEvent ev;
-    XNextEvent(display, &ev);
-    if (ev.type == GenericEvent && ev.xcookie.extension == opcode) {
-      if (XGetEventData(display, &ev.xcookie)) {
-        handle_events(ev.xcookie.data, args);
-        XFreeEventData(display, &ev.xcookie);
+    fd_set read_fds;
+    FD_ZERO(&read_fds);
+    FD_SET(ConnectionNumber(display), &read_fds);
+    FD_SET(pipe_fd[0], &read_fds);
+
+    int max_fd = ConnectionNumber(display) > pipe_fd[0]
+                     ? ConnectionNumber(display)
+                     : pipe_fd[0];
+
+    if (select(max_fd + 1, &read_fds, NULL, NULL, NULL) > 0) {
+      if (FD_ISSET(pipe_fd[0], &read_fds)) {
+        char buf;
+        read(pipe_fd[0], &buf, sizeof(buf));
+        printf("Received SIGINT, exiting...\n");
+        break;
+      }
+
+      if (FD_ISSET(ConnectionNumber(display), &read_fds)) {
+        XEvent ev;
+        XNextEvent(display, &ev);
+        if (ev.type == GenericEvent && ev.xcookie.extension == opcode) {
+          if (XGetEventData(display, &ev.xcookie)) {
+            handle_events(ev.xcookie.data, args);
+            XFreeEventData(display, &ev.xcookie);
+          }
+        }
       }
     }
   }
+
+  close(pipe_fd[0]);
+  close(pipe_fd[1]);
   return 0;
 }
 
@@ -124,8 +149,13 @@ int main(int ac, char **av) {
   // process inputs and make it work in the background
   handle_arguments(ac, av);
 
-  // systemd
+  // systemd integration
+  if (pipe(pipe_fd) == -1) {
+    perror("pipe");
+    return EXIT_FAILURE;
+  }
   signal(SIGTERM, handle_signal); // systemd stop signal
+  signal(SIGINT, handle_signal);  // ctrl-c signal
   openlog(av[0], LOG_PID, LOG_DAEMON);
   syslog(LOG_INFO, "Daemon started.");
 

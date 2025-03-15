@@ -2,12 +2,17 @@
 set -e
 
 make
-cp ./tz /usr/bin/
-cp ./systemd/tz.service /etc/systemd/system/ 
+sudo cp ./tz /usr/bin/
+make fclean
 
-# Enable the service for autostart
-systemctl daemon-reload
-systemctl enable tz.service
-systemctl start tz.service || true
+if [ ! -d "$HOME/.config/systemd/user/" ]; then
+    mkdir -p "$HOME/.config/systemd/user/"
+fi
+cp ./systemd/tz.service "$HOME/.config/systemd/user/"
 
+systemctl --user daemon-reload
+systemctl --user enable tz.service
+systemctl --user start tz.service
+
+echo "Installation complete! The service should now start automatically."
 exit 0
