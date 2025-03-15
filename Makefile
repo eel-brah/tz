@@ -2,6 +2,10 @@ CC := gcc
 CFLAGS := -Wall -Wextra -O2
 LDFLAGS = -lX11 -lXi 
 
+ifdef ID
+	CFLAGS += -DID=$(ID)
+endif
+
 SRC_DIRS := src
 INCLUDE_DIR := include
 BUILD_DIR := build

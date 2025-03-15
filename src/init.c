@@ -23,7 +23,11 @@ Display *init(int *opcode, int *event, int *error, t_args *args) {
 int get_touchpad_id(Display *display) {
   int touchpad_id = TOUCHPAD_ID;
   if (touchpad_id != -1)
+  {
+    syslog(LOG_INFO, "Using touchpad ID: %d", touchpad_id);
+    printf("Using touchpad ID: %d\n", touchpad_id);
     return touchpad_id;
+  }
   // Query all input devices
   int ndevices;
   XIDeviceInfo *devices = XIQueryDevice(display, XIAllDevices, &ndevices);
@@ -36,6 +40,7 @@ int get_touchpad_id(Display *display) {
     if (strstr(devices[i].name, "Touchpad") ||
         strstr(devices[i].name, "TouchPad")) {
       touchpad_id = devices[i].deviceid;
+      syslog(LOG_INFO, "Found touchpad: %s (ID: %d)\n", devices[i].name, touchpad_id);
       printf("Found touchpad: %s (ID: %d)\n", devices[i].name, touchpad_id);
       break;
     }

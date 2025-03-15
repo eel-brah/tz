@@ -1,6 +1,6 @@
 #include "../include/touchpad_zoom.h"
 
-int TOUCHPAD_ID = -1;
+int TOUCHPAD_ID = ID;
 volatile sig_atomic_t zoom_running = 1;
 
 void handle_signal(int sig) {
@@ -111,8 +111,6 @@ void handle_arguments(int ac, char **av) {
       exit(EXIT_FAILURE);
     }
 
-    syslog(LOG_INFO, "Using touchpad ID: %d", (int)id);
-    printf("Using touchpad ID: %d\n", (int)id);
     TOUCHPAD_ID = (int)id;
     return;
   }

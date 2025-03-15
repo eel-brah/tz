@@ -1,25 +1,28 @@
 #ifndef TOUCHPAD_ZOOM_H
-# define TOUCHPAD_ZOOM_H
+#define TOUCHPAD_ZOOM_H
 
 #include <X11/Xlib.h>
 #include <X11/extensions/XInput2.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <math.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 #include <time.h>
 #include <unistd.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <syslog.h>
 
 #define MIN_ZOOM_FACTOR 1.0
 #define MAX_ZOOM_FACTOR 4.0
 #define ZOOM_SENSITIVITY 0.5 // Adjust this to control zoom speed
+
+#ifndef ID
+#define ID -1
+#endif
 
 extern int TOUCHPAD_ID;
 extern volatile sig_atomic_t zoom_running;
