@@ -3,7 +3,10 @@
 int TOUCHPAD_ID = -1;
 volatile sig_atomic_t zoom_running = 1;
 
-void handle_signal(int sig) { zoom_running = 0; }
+void handle_signal(int sig) {
+  (void)sig;
+  zoom_running = 0;
+}
 
 void handle_events(XIDeviceEvent *xdata, t_args *args) {
   double scale_ratio;
@@ -125,7 +128,6 @@ int main(int ac, char **av) {
 
   // systemd
   signal(SIGTERM, handle_signal); // systemd stop signal
-  signal(SIGINT, handle_signal);  // ctrl-c signal
   openlog(av[0], LOG_PID, LOG_DAEMON);
   syslog(LOG_INFO, "Daemon started.");
 

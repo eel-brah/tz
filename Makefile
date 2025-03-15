@@ -1,5 +1,6 @@
 CC := gcc
-CFLAGS := -lX11 -lXi #-Wall -Wextra -Werror
+CFLAGS := -Wall -Wextra -O2
+LDFLAGS = -lX11 -lXi 
 
 SRC_DIRS := src
 INCLUDE_DIR := include
@@ -17,7 +18,7 @@ NAME := tz
 all: $(NAME)
 
 $(NAME): $(OBJ) $(INCLUDE)
-	@$(CC) $(OBJ) $(CFLAGS) -o $(NAME) 
+	@$(CC) $(OBJ) $(LDFLAGS) -o $(NAME) 
 
 $(BUILD_DIR)/%.o: $(SRC_DIRS)/%.c $(INCLUDE)
 	@[ -d "$(BUILD_DIR)" ] || mkdir "$(BUILD_DIR)"
