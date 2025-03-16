@@ -1,5 +1,8 @@
 #include "../include/touchpad_zoom.h"
 
+int pipe_fd[2];
+static int TOUCHPAD_ID = ID;
+
 void handle_arguments(int ac, char **av) {
   if (ac == 1)
     return;

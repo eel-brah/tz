@@ -23,7 +23,6 @@
 #define ID -1
 #endif
 
-extern int TOUCHPAD_ID;
 extern volatile sig_atomic_t zoom_running;
 extern int pipe_fd[2];
 
@@ -49,6 +48,9 @@ void handle_arguments(int ac, char **av);
 void systemd_integration(char *av0);
 int run_setup(Display *display, pthread_t *zoom_thread, t_args *args);
 
+// Run
+int run(Display *display, pthread_t *zoom_thread, t_args *args, int opcode);
+void clean_up(Display *display, pthread_t *zoom_thread, t_args *args);
 void handle_signal(int sig);
 
 #endif

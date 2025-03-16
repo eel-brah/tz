@@ -10,7 +10,7 @@ SRC_DIRS := src
 INCLUDE_DIR := include
 BUILD_DIR := build
 
-SRC := touchpad_zoom.c init.c zoom.c
+SRC := tz.c run.c init.c zoom.c
 INCLUDE := touchpad_zoom.h 
 
 INCLUDE := $(addprefix $(INCLUDE_DIR)/,$(INCLUDE))
