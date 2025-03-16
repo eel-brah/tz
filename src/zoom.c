@@ -14,10 +14,8 @@ void *update_zoom(void *arg) {
       set_zoom_factor(args->current_zoom_factor);
     }
     pthread_mutex_unlock(&(args->zoom_mutex));
-
     nanosleep(&sleep_time, NULL);
   }
-
   return NULL;
 }
 
@@ -27,7 +25,7 @@ void set_zoom_factor(double factor) {
   if (factor > MAX_ZOOM_FACTOR)
     factor = MAX_ZOOM_FACTOR;
 
-  char command[100];
+  char command[125];
   sprintf(command,
           "gsettings set org.gnome.desktop.a11y.magnifier mag-factor %.2f",
           factor);

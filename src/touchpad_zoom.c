@@ -4,18 +4,9 @@ int pipe_fd[2];
 int TOUCHPAD_ID = ID;
 volatile sig_atomic_t zoom_running = 1;
 
-void handle_signal(int sig) {
-  (void)sig;
-  char buf = 1;
-  write(pipe_fd[1], &buf, sizeof(buf));
-  zoom_running = 0;
-}
-
 void handle_events(XIDeviceEvent *xdata, t_args *args) {
   double scale_ratio;
-
   pthread_mutex_lock(&(args->zoom_mutex));
-
   switch (xdata->evtype) {
   case XI_GesturePinchBegin:
     enable_zoom();
@@ -25,7 +16,6 @@ void handle_events(XIDeviceEvent *xdata, t_args *args) {
 
   case XI_GesturePinchUpdate:
     scale_ratio = ((XIGesturePinchEvent *)xdata)->scale;
-
     // Calculate zoom based on relative change starting from
     // the current base zoom level
     if (scale_ratio > 1.0) {
@@ -45,44 +35,36 @@ void handle_events(XIDeviceEvent *xdata, t_args *args) {
   default:
     break;
   }
-
   pthread_mutex_unlock(&(args->zoom_mutex));
 }
 
-int start(Display *display, pthread_t *zoom_thread, t_args *args, int opcode) {
-  // Get touchpad id
-  int touchpad_id = get_touchpad_id(display);
-  if (touchpad_id == -1)
-    return 1;
+void handle_signal(int sig) {
+  (void)sig;
+  char buf = 1;
+  write(pipe_fd[1], &buf, sizeof(buf));
+  zoom_running = 0;
+}
 
-  // Setup the events
-  setup_events(display, touchpad_id);
+int run(Display *display, pthread_t *zoom_thread, t_args *args, int opcode) {
+  run_setup(display, zoom_thread, args);
 
-  // Start the zoom thread
-  if (pthread_mutex_init(&(args->zoom_mutex), NULL) != 0) {
-    fprintf(stderr, "Mutex initialization failed\n");
-    return 1;
-  }
-  pthread_create(zoom_thread, NULL, update_zoom, args);
-
+  // Main event loop
   while (zoom_running) {
     fd_set read_fds;
     FD_ZERO(&read_fds);
+    // Watch both X11 connection and pipe for events
     FD_SET(ConnectionNumber(display), &read_fds);
     FD_SET(pipe_fd[0], &read_fds);
-
     int max_fd = ConnectionNumber(display) > pipe_fd[0]
                      ? ConnectionNumber(display)
                      : pipe_fd[0];
-
+    // Wait for an event from either X11 or pipe_fd
     if (select(max_fd + 1, &read_fds, NULL, NULL, NULL) > 0) {
       if (FD_ISSET(pipe_fd[0], &read_fds)) {
         char buf;
         read(pipe_fd[0], &buf, sizeof(buf));
-        printf("Received SIGINT, exiting...\n");
         break;
       }
-
       if (FD_ISSET(ConnectionNumber(display), &read_fds)) {
         XEvent ev;
         XNextEvent(display, &ev);
@@ -95,86 +77,43 @@ int start(Display *display, pthread_t *zoom_thread, t_args *args, int opcode) {
       }
     }
   }
-
-  close(pipe_fd[0]);
-  close(pipe_fd[1]);
   return 0;
 }
 
 void clean_up(Display *display, pthread_t *zoom_thread, t_args *args) {
-  pthread_join(*zoom_thread, NULL);
+  close(pipe_fd[0]);
+  close(pipe_fd[1]);
+  syslog(LOG_INFO, "Daemon shutting down.");
+  printf("Exiting...\n");
+  closelog();
+  int result = pthread_join(*zoom_thread, NULL);
+  if (result != 0) {
+    fprintf(stderr, "Failed to join zoom thread: %s\n", strerror(result));
+    syslog(LOG_INFO, "Failed to join zoom thread: %s", strerror(result));
+  }
   pthread_mutex_destroy(&(args->zoom_mutex));
   XCloseDisplay(display);
 }
-void handle_arguments(int ac, char **av) {
-  if (ac == 1) {
-    return;
-  }
-
-  if (ac == 2 && !strcmp(av[1], "-h")) {
-    printf("Usage: %s [OPTION]\n", av[0]);
-    printf("  -h          Display this help message\n");
-    printf("  -i [ID]     Specify touchpad ID (0-1000) manually\n");
-
-    printf("\n\nDESCRIPTION:\n");
-    printf("Enables zoom using a laptop's touchpad.\n");
-    printf("By default, it automatically detects the touchpad ID.\n");
-    printf("You can manually specify the ID using the -i option.\n");
-    exit(0);
-  }
-
-  if (ac == 3 && strcmp(av[1], "-i") == 0) {
-    char *endptr;
-    errno = 0;
-    long id = strtol(av[2], &endptr, 10);
-
-    if (*endptr != '\0' || errno == ERANGE || id < 0 || id > 1000) {
-      fprintf(
-          stderr,
-          "Error: Invalid ID '%s'. ID must be a number between 0 and 1000.\n",
-          av[2]);
-      exit(EXIT_FAILURE);
-    }
-
-    TOUCHPAD_ID = (int)id;
-    return;
-  }
-
-  fprintf(stderr, "Invalid usage. Run '%s -h' for help.\n", av[0]);
-  exit(1);
-}
 
 int main(int ac, char **av) {
-
-  // process inputs and make it work in the background
-  handle_arguments(ac, av);
-
-  // systemd integration
-  if (pipe(pipe_fd) == -1) {
-    perror("pipe");
-    return EXIT_FAILURE;
-  }
-  signal(SIGTERM, handle_signal); // systemd stop signal
-  signal(SIGINT, handle_signal);  // ctrl-c signal
-  openlog(av[0], LOG_PID, LOG_DAEMON);
-  syslog(LOG_INFO, "Daemon started.");
-
-  // Init Display, args and get XInput2 info
   t_args args;
   pthread_t zoom_thread;
   int opcode, event, error;
-  Display *display = init(&opcode, &event, &error, &args);
-  if (display == NULL)
-    return 1;
+  Display *display;
 
-  if (start(display, &zoom_thread, &args, opcode)) {
+  // process inputs and make it work in the background
+  handle_arguments(ac, av);
+  // systemd integration
+  systemd_integration(av[0]);
+  // Init Display, args and get XInput2 info
+  display = init(&opcode, &event, &error, &args);
+  if (!display)
+    return 1;
+  if (run(display, &zoom_thread, &args, opcode)) {
     XCloseDisplay(display);
     return 1;
   }
-
-  // Clean up - tho we never get here
-  syslog(LOG_INFO, "Daemon shutting down.");
-  closelog();
+  // Clean up
   clean_up(display, &zoom_thread, &args);
   return 0;
 }

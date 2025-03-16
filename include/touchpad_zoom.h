@@ -18,14 +18,14 @@
 
 #define MIN_ZOOM_FACTOR 1.0
 #define MAX_ZOOM_FACTOR 4.0
-#define ZOOM_SENSITIVITY 0.5 // Adjust this to control zoom speed
-
+#define ZOOM_SENSITIVITY 0.5 
 #ifndef ID
 #define ID -1
 #endif
 
 extern int TOUCHPAD_ID;
 extern volatile sig_atomic_t zoom_running;
+extern int pipe_fd[2];
 
 // Struct to track zoom state
 typedef struct s_args {
@@ -45,5 +45,10 @@ void *update_zoom(void *arg);
 Display *init(int *opcode, int *event, int *error, t_args *args);
 int get_touchpad_id(Display *display);
 void setup_events(Display *display, int touchpad_id);
+void handle_arguments(int ac, char **av);
+void systemd_integration(char *av0);
+int run_setup(Display *display, pthread_t *zoom_thread, t_args *args);
+
+void handle_signal(int sig);
 
 #endif
