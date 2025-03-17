@@ -2,13 +2,14 @@
 
 ## Overview
 
-This is a Linux program that enables zooming using a laptop's touchpad.
+tz is a Linux program that enables zooming using a laptop's touchpad.
 It utilizes `Xlib` and `XInput2` for handling touchpad gestures.
 Currently, it is compatible **only with GNOME**.
 
 ## Requirements
 
 To run it you need the following dependencies:
+
     - X11
     - XInput2
 
@@ -28,15 +29,15 @@ Arch Linux:
 sudo pacman -S libx11 libxi
 ```
 
-## Installation to ru as a systemd user service (Recommended)
+## Installation to run as a systemd user service (Recommended)
 
-To install the program, run:
+To install tz, run:
 
 ```sh
 ./install.sh
 ```
 
-This script will install the program and configure it to run as a **systemd user service**.
+This script will install tz and configure it to run as a **systemd user service**.
 
 If you need to manually specify the touchpad ID during installation, run:
 
@@ -50,9 +51,7 @@ where `<ID>` is the touchpad ID.
 
 ### Using Systemd (Recommended)
 
-The program runs as a **systemd user service**. You can manage it with the following commands:
-
-### Checking Status
+tz runs as a **systemd user service**. You can manage it with the following commands:
 
 To check if the service is running:
 
@@ -60,15 +59,11 @@ To check if the service is running:
 systemctl --user status tz
 ```
 
-### Stopping the Service
-
 To stop the service:
 
 ```sh
 systemctl --user stop tz
 ```
-
-### Starting the Service
 
 To start the service:
 
@@ -99,7 +94,7 @@ To specify a touchpad ID manually:
 
 where `<ID>` is the correct touchpad ID obtained from `xinput list`.
 
-To stop the program, you may need to manually kill the process:
+To stop it, you may need to manually kill the process:
 
 ```sh
 pkill tz
@@ -108,7 +103,7 @@ pkill tz
 
 ## Troubleshooting
 
-If the program appears unresponsive to touchpad gestures, you can verify which touchpad ID is being used by checking the logs:
+If tz appears unresponsive to touchpad gestures, you can verify which touchpad ID is being used by checking the logs:
 ```sh
 sudo journalctl | grep tz | grep "Using touchpad"
 ```
@@ -118,13 +113,13 @@ To list all input devices, use:
 xinput list
 ```
 
-If the touchpad ID shown in the logs is incorrect, specify the correct one during installation:
+If the touchpad ID shown in the logs is incorrect, reinstall the program with the correct one:
 ```sh
 ./remove
 ./install.sh <ID>
 ```
 
-Or if running without systemd:
+If running without systemd:
 ```sh
 ./tz <ID> & 
 ```
@@ -137,7 +132,7 @@ where `<ID>` is the correct touchpad ID from `xinput list`.
 
 ## Uninstallation
 
-To uninstall the program, run:
+To uninstall tz, run:
 
 ```sh
 ./remove.sh
@@ -145,7 +140,7 @@ To uninstall the program, run:
 
 ## Additional Notes
 
-- The program is currently **only compatible with GNOME**.
+- tz is currently **only compatible with GNOME**.
 - Future updates may include support for other desktop environments.
 
 ## Contributing
