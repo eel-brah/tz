@@ -3,19 +3,41 @@
 int pipe_fd[2];
 static int TOUCHPAD_ID = ID;
 
+void print_help(char *av0) {
+  printf("Usage: %s [OPTION]\n\n", av0);
+  printf("Options:\n");
+  printf("  -h           Show help message\n");
+  printf("  -i <ID>      Manually specify the touchpad ID (0-1000)\n\n");
+  printf("Description:\n");
+  printf("  This program enables zooming using a laptop's touchpad.\n");
+  printf("  By default, it automatically detects the touchpad ID.\n");
+  printf(
+      "  - The `-i` option allows you to manually specify the touchpad ID.\n");
+  printf("  - Alternatively, you can define the ID macro at compile time.\n");
+  printf("  The program integrates with systemd for seamless background "
+         "execution.\n\n");
+  printf("Troubleshooting:\n");
+  printf("  If the program is unresponsive, check the logs for the detected "
+         "touchpad ID:\n");
+  printf("    sudo journalctl | grep tz | grep \"Using touchpad\"\n");
+  printf("  To list all input devices:\n");
+  printf("    xinput list\n");
+  printf("  If the detected ID is incorrect, run the program with the "
+         "correct one:\n");
+  printf("     %s -i <ID> &\n", av0);
+  printf("  Or at compile time:\n");
+  printf("     make <ID>\n");
+  printf("  Or if running with systemd:\n");
+  printf("    ./remove.sh \n");
+  printf("    ./install.sh <ID>\n");
+}
+
 void handle_arguments(int ac, char **av) {
   if (ac == 1)
     return;
 
   if (ac == 2 && !strcmp(av[1], "-h")) {
-    printf("Usage: %s [OPTION]\n", av[0]);
-    printf("  -h          Display this help message\n");
-    printf("  -i [ID]     Specify touchpad ID (0-1000) manually\n");
-    printf("\n\nDESCRIPTION:\n");
-    printf("Enables zoom using a laptop's touchpad.\n By default, it "
-           "automatically detects the touchpad ID.\n You can manually specify "
-           "the ID using the -i option, or you can set the ID at compile time "
-           "by specifying the ID macro'.\n");
+    print_help(av[0]);
     exit(0);
   }
 
@@ -91,7 +113,7 @@ int get_touchpad_id(Display *display) {
     if (strstr(devices[i].name, "Touchpad") ||
         strstr(devices[i].name, "TouchPad")) {
       touchpad_id = devices[i].deviceid;
-      syslog(LOG_INFO, "Found touchpad: %s (ID: %d)\n", devices[i].name,
+      syslog(LOG_INFO, "Using touchpad: %s (ID: %d)\n", devices[i].name,
              touchpad_id);
       printf("Using touchpad: %s (ID: %d)\n", devices[i].name, touchpad_id);
       break;
